@@ -1,5 +1,6 @@
 `include "alu.v"
 // `include "pc_unit.v"
+`include "pipe_pc_unit.v"
 `include "pc_dff.v"
 `include "adder.v"
 `include "regfile.v"
@@ -123,6 +124,11 @@ module pipeCPU
 input clk
 );
 
+  // Instruction fetch NOP wires
+  wire [31:0] instruction;
+  reg  [31:0] NOP = 32'b0;
+  wire  [1:0] stall_mux;
+
   // Instruction decoder outputs
   wire[5:0] opcode,
             funct;
@@ -132,15 +138,23 @@ input clk
   wire [15:0] immediate;
   wire [25:0] address;
 
-  //Instruction decoder input
+  // Instruction Fetch Phase
   wire [31:0] instruction_IF;
+  wire        BEQ_IF,
+              BNE_IF,
+              JR_IF,
+              LW_IF;
 
   // Register Fetch Phase
   wire       RegDst_RF, // ctrl signal for RegDst mux
              RegWr_RF,
              ALUsrc_RF,
              MemWr_RF,
-             MemToReg_RF;
+             MemToReg_RF,
+             BEQ_RF,
+             BNE_RF,
+             JR_RF,
+             LW_RF;
   wire [2:0] ALUctrl_RF;
   wire [4:0] regDest_RF; //actual reg address from RegDst mux
   wire [31:0]da_RF,   // reg file output
@@ -153,7 +167,9 @@ input clk
   reg        RegWr_EX,
              ALUsrc_EX,
              MemWr_EX,
-             MemToReg_EX;
+             MemToReg_EX,
+             BEQ_EX,
+             BNE_EX;
   reg [2:0]  ALUctrl_EX;
   wire [31:0]ALUout_EX;
   reg [4:0]  regDest_EX;
@@ -196,6 +212,13 @@ input clk
   wire [4:0] regDstMuxOut;
 
   always @(posedge clk) begin
+    // IF -> RF DFFS
+    instruction_RF <= instruction_IF;
+    BEQ_RF <= BEQ_IF;
+    BNE_RF <= BNE_IF;
+    JR_RF <= JR_IF;
+    LW_RF <= LW_IF;
+
     // RF -> EX DFFs
     RegWr_EX <= RegWr_RF;
     ALUsrc_EX <= ALUsrc_RF;
@@ -205,6 +228,9 @@ input clk
     regDest_EX <= regDest_RF;
     da_EX <= da_RF;
     db_EX <= db_RF;
+    BEQ_EX <= BEQ_RF;
+    BNE_EX <= BNE_RF;
+
 
     // EX -> MEM DFFs
     RegWr_MEM <= RegWr_EX;
@@ -219,10 +245,21 @@ input clk
     regDest_WB <= regDest_MEM;
     RegWr_WB <= RegWr_MEM;
     RegVal_WB <= RegVal_MEM;
-
   end
 
-  instruction_decoder instrdecoder(.instruction(instruction_IF),
+  // Necessary decoding in IF phase
+  // TODO: make BEQ_IF, BNE_IF, JR_IF, LW_IF
+
+  // Instruction/NOP mux logic
+  // NOTE: This OR gate might also need BEQ_EX and BNE_EX, not sure
+  assign stall_mux = (BEQ_RF | BNE_RF | JR_RF | LW_RF);
+  mux2to1by32 mux_NOP(.out(instruction_IF),
+              .address(stall_mux),
+              .input0(instruction),
+              .input1(NOP));
+
+
+  instruction_decoder instrdecoder(.instruction(instruction_RF),
                       .opcode(opcode),
                       .rs(rs),
                       .rt(rt),
@@ -241,29 +278,47 @@ input clk
                     .MemWr(MemWr_RF),
                     .MemToReg(MemToReg_RF));
 
-  // pcUnit pcmodule(.PC(PC),
-  //                 .PC_plus_four(PC_plus_four),
-  //                 .clk(clk),
-  //                 .branchAddr(immediate),
-  //                 .jumpAddr(address),
-  //                 .regDa(da_EX),
-  //                 .ALUzero(ALUzero),
-  //                 .ctrlBEQ(ctrlBEQ),
-  //                 .ctrlBNE(ctrlBNE),
-  //                 .ctrlJ(ctrlJ),
-  //                 .ctrlJR(ctrlJR)
-  //                 );
-  pc_dff #(32) pc(.trigger(clk),
-                  .d(PC_plus_four),
-                  .q(PC));
+  pipePCUnit pcmodule(.PC(PC),
+                    .PC_plus_four(PC_plus_four),
+                    .clk(clk),
+                    .da_RF(da_RF),
+                    .address(address_IF),
+                    .imm_EX(imm_EX),
+                    .stall_MUX(stall_mux),
+                    .ALUZero(ALUzero),
+                    .BEQ_IF(BEQ_IF),
+                    .BNE_IF(BNE_IF),
+                    .BEQ_EX(BEQ_EX),
+                    .BNE_EX(BNE_EX),
+                    .J_IF(J_IF),
+                    .JAL_IF(JAL_IF),
+                    .JR_IF(JR_IF),
+                    .JR_RF(JR_RF),
+                    .LW_IF(LW_IF));
 
-  // PC + 4
-  full32BitAdder add4(.sum(PC_plus_four),
-                  .carryout(),
-                  .overflow(),
-                  .a(PC),
-                  .b(32'b100),
-                  .subtract(1'b0));
+  // // pcUnit pcmodule(.PC(PC),
+  // //                 .PC_plus_four(PC_plus_four),
+  // //                 .clk(clk),
+  // //                 .branchAddr(immediate),
+  // //                 .jumpAddr(address),
+  // //                 .regDa(da_EX),
+  // //                 .ALUzero(ALUzero),
+  // //                 .ctrlBEQ(ctrlBEQ),
+  // //                 .ctrlBNE(ctrlBNE),
+  // //                 .ctrlJ(ctrlJ),
+  // //                 .ctrlJR(ctrlJR)
+  // //                 );
+  // pc_dff #(32) pc(.trigger(clk),
+  //                 .d(PC_plus_four),
+  //                 .q(PC));
+  //
+  // // PC + 4
+  // full32BitAdder add4(.sum(PC_plus_four),
+  //                 .carryout(),
+  //                 .overflow(),
+  //                 .a(PC),
+  //                 .b(32'b100),
+  //                 .subtract(1'b0));
 
 
   // Reg file inputs
@@ -305,7 +360,7 @@ input clk
 
 
   datamemory datamem(.clk(clk),
-                    .instrOut(instruction_IF),
+                    .instrOut(instruction),
                     .dataOut(dataOut_MEM),
                     .instrAddr(PC),
                     .address(ALUout_MEM),
