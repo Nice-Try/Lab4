@@ -6,4 +6,4 @@ mars a mc CompactTextAtZero dump .text HexText mips1.text.hex ../asmtest/mips1.a
 iverilog -Wall -o pipecpu.vvp pipecpu.t.v
 ./pipecpu.vvp
 
-gtkwave pipecpu.vcd
+gtkwave pipecpu.vcd pipecpu.gtkw

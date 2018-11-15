@@ -136,15 +136,25 @@ input clk
   wire [31:0] instruction_IF;
 
   // LUT outputs
-  wire       RegDst_RF; // ctrl signal for RegDst mux
-  wire       RegWr_EX,
+  wire       RegDst_RF, // ctrl signal for RegDst mux
+             RegWr_RF,
+             ALUsrc_RF,
+             MemWr_RF,
+             MemToReg_RF;
+  wire [2:0] ALUctrl_RF;
+  wire [31:0] imm_RF;
+  wire [4:0] regDest_RF; //actual reg address
+  wire [31:0] da_RF,
+              db_RF;
+
+  reg        RegWr_EX,
              ALUsrc_EX,
              MemWr_EX,
              MemToReg_EX;
-  wire [2:0] ALUctrl_EX;
-  wire [4:0] regDest_EX; //actual reg address
-  wire [31:0] imm_EX,
-              ALUout_EX;
+  reg [2:0]  ALUctrl_EX;
+  wire [31:0]ALUout_EX;
+  reg [31:0] imm_EX;
+  reg [4:0]  regDest_EX;
 
   reg         RegWr_MEM,
               MemWr_MEM,
@@ -171,7 +181,7 @@ input clk
   reg [4:0] reg31 = 5'd31;
   wire [4:0] rdMuxOut;
   wire [31:0] regDataIn;
-  wire [31:0] da_EX,
+  reg [31:0] da_EX,
               db_EX;
 
   // ALU src mux
@@ -186,6 +196,14 @@ input clk
 
   always @(posedge clk) begin
     // RF -> EX DFFs
+    RegWr_EX <= RegWr_RF;
+    ALUsrc_EX <= ALUsrc_RF;
+    MemWr_EX <= MemWr_RF;
+    MemToReg_EX <= MemToReg_RF;
+    ALUctrl_EX <= ALUctrl_RF;
+    regDest_EX <= regDest_RF;
+    da_EX <= da_RF;
+    db_EX <= db_RF;
 
     // EX -> MEM DFFs
     RegWr_MEM <= RegWr_EX;
@@ -194,6 +212,7 @@ input clk
     db_MEM <= db_EX;
     regDest_MEM <= regDest_EX;
     ALUout_MEM <= ALUout_EX;
+    imm_EX <= imm_RF;
 
     // MEM -> WB DFFs
     regDest_WB <= regDest_MEM;
@@ -215,11 +234,11 @@ input clk
                     .opcode(opcode),
                     .funct(funct),
                     .RegDst(RegDst_RF),
-                    .RegWr(RegWr_EX),
-                    .ALUctrl(ALUctrl_EX),
-                    .ALUsrc(ALUsrc_EX),
-                    .MemWr(MemWr_EX),
-                    .MemToReg(MemToReg_EX));
+                    .RegWr(RegWr_RF),
+                    .ALUctrl(ALUctrl_RF),
+                    .ALUsrc(ALUsrc_RF),
+                    .MemWr(MemWr_RF),
+                    .MemToReg(MemToReg_RF));
 
   // pcUnit pcmodule(.PC(PC),
   //                 .PC_plus_four(PC_plus_four),
@@ -248,7 +267,7 @@ input clk
 
   // Reg file inputs
   // Aw input
-  mux3to1by5 rdMux(.out(regDest_EX), // actual register address
+  mux3to1by5 rdMux(.out(regDest_RF), // actual register address
                   .address(RegDst_RF), // ctrl signal
                   .input0(rd),
                   .input1(rt),
@@ -260,8 +279,8 @@ input clk
                         .input1(ALUout_MEM),
                         .input2(PC_plus_four));
 
-  regfile regFile(.ReadData1(da_EX),
-                  .ReadData2(db_EX),
+  regfile regFile(.ReadData1(da_RF),
+                  .ReadData2(db_RF),
                   .WriteData(RegVal_WB),
                   .ReadRegister1(rs),
                   .ReadRegister2(rt),
@@ -271,7 +290,7 @@ input clk
 
   // ALU input
   // Immediate sign extend
-  assign imm_EX = {{16{immediate[15]}}, immediate};
+  assign imm_RF = {{16{immediate[15]}}, immediate};
 
   mux2to1by32 ALUsrcMux(.out(ALUsrcMuxOut),
                   .address(ALUsrc_EX),
