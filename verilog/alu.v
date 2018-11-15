@@ -2,7 +2,7 @@
 `include "or.v"
 `include "slt.v"
 `include "xor.v"
-`include "adder.v"
+// `include "adder.v"
 
 `define ADDMODULE  3'd0
 `define SUBMODULE  3'd1

@@ -1,8 +1,11 @@
 `include "alu.v"
-`include "pc_unit.v"
+// `include "pc_unit.v"
+`include "pc_dff.v"
+`include "adder.v"
 `include "regfile.v"
 `include "instruction_decoder.v"
 `include "datamemory.v"
+`include "mux32.v"
 `include "mux5.v"
 `include "mux5_3to1.v"
 `include "mux32_3to1.v"
@@ -210,18 +213,30 @@ input clk
                     .MemWr(MemWr_EX),
                     .MemToReg(MemToReg_EX));
 
-  pcUnit pcmodule(.PC(PC),
-                  .PC_plus_four(PC_plus_four),
-                  .clk(clk),
-                  .branchAddr(immediate),
-                  .jumpAddr(address),
-                  .regDa(da_EX),
-                  .ALUzero(ALUzero),
-                  .ctrlBEQ(ctrlBEQ),
-                  .ctrlBNE(ctrlBNE),
-                  .ctrlJ(ctrlJ),
-                  .ctrlJR(ctrlJR)
-                  );
+  // pcUnit pcmodule(.PC(PC),
+  //                 .PC_plus_four(PC_plus_four),
+  //                 .clk(clk),
+  //                 .branchAddr(immediate),
+  //                 .jumpAddr(address),
+  //                 .regDa(da_EX),
+  //                 .ALUzero(ALUzero),
+  //                 .ctrlBEQ(ctrlBEQ),
+  //                 .ctrlBNE(ctrlBNE),
+  //                 .ctrlJ(ctrlJ),
+  //                 .ctrlJR(ctrlJR)
+  //                 );
+  pc_dff #(32) pc(.trigger(clk),
+                  .d(PC_plus_four),
+                  .q(PC));
+
+  // PC + 4
+  full32BitAdder add4(.sum(PC_plus_four),
+                  .carryout(),
+                  .overflow(),
+                  .a(PC),
+                  .b(32'b100),
+                  .subtract(1'b0));
+
 
   // Reg file inputs
   // Aw input
