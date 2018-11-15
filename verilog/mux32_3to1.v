@@ -2,7 +2,7 @@
 module mux3to1by32
 (
 output [31:0] out,
-input         address,
+input  [1:0]      address,
 input  [31:0] input0, input1, input2
 );
 

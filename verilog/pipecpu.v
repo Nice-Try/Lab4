@@ -30,23 +30,23 @@ module CPUcontrolLUT (
 input       clk,
 input [5:0] opcode,
             funct,
-output reg  RegDst,
-            RegWr,
+output reg  RegWr,
             ALUsrc,
             MemWr,
-            MemToReg,
+output reg [1:0] MemToReg,
+                 RegDst,
 output reg [2:0] ALUctrl
 );
-  localparam     Rd = 0,    // for RegDst Mux
-                 Rt = 1,
+  localparam     Rd = 2'b0,    // for RegDst Mux
+                 Rt = 2'b1,
              ALUadd = 3'b000,
              ALUxor = 3'b010,
              ALUsub = 3'b001,
              ALUslt = 3'b011,
                  Db = 0,    // for ALUsrc Mux
                 Imm = 1,
-             ALUout = 0,    // for MemToReg Mux
-              Dout  = 1;
+             ALUout = 2'b1,    // for MemToReg Mux
+              Dout  = 2'b0;
 
   always @(*) begin
     case(opcode)
@@ -143,19 +143,24 @@ input clk
              MemToReg_EX;
   wire [2:0] ALUctrl_EX;
   wire [4:0] regDest_EX; //actual reg address
-  wire [31:0] imm_EX;
+  wire [31:0] imm_EX,
+              ALUout_EX;
 
   reg         RegWr_MEM,
               MemWr_MEM,
               MemToReg_MEM;
-  reg [31:0]  db_MEM;
-  wire [31:0] RegVal_MEM,
-              ALUout_MEM;
+  reg [31:0]  ALUout_MEM,
+              db_MEM;
+  wire [31:0] RegVal_MEM;
   reg [4:0]   regDest_MEM;
 
   reg         RegWr_WB;
   reg [4:0]   regDest_WB;
-  wire [31:0]  RegVal_WB;
+  reg [31:0]  RegVal_WB;
+
+  // data memory to register
+  wire [31:0] dataMemMuxOut;
+  wire [31:0] dataOut_MEM;
 
 
   // PC outputs
@@ -175,6 +180,7 @@ input clk
   // ALU outputs
   wire        ALUzero;
 
+
   // Reg Dest outputs
   wire [4:0] regDstMuxOut;
 
@@ -187,10 +193,12 @@ input clk
     MemToReg_MEM <= MemToReg_EX;
     db_MEM <= db_EX;
     regDest_MEM <= regDest_EX;
+    ALUout_MEM <= ALUout_EX;
 
     // MEM -> WB DFFs
     regDest_WB <= regDest_MEM;
     RegWr_WB <= RegWr_MEM;
+    RegVal_WB <= RegVal_MEM;
 
   end
 
@@ -246,6 +254,12 @@ input clk
                   .input1(rt),
                   .input2(reg31));
 
+  mux3to1by32 regdataMux(.out(RegVal_MEM),
+                        .address(MemToReg_MEM),
+                        .input0(dataOut_MEM),
+                        .input1(ALUout_MEM),
+                        .input2(PC_plus_four));
+
   regfile regFile(.ReadData1(da_EX),
                   .ReadData2(db_EX),
                   .WriteData(RegVal_WB),
@@ -264,7 +278,7 @@ input clk
                   .input0(db_EX),
                   .input1(imm_EX));
 
-  ALU alu(.result(ALUout_MEM),
+  ALU alu(.result(ALUout_EX),
                   .carryout(),
                   .zero(ALUzero),
                   .overflow(),
@@ -272,9 +286,6 @@ input clk
                   .operandB(ALUsrcMuxOut),
                   .command(ALUctrl_EX));
 
-  // data memory to register
-  wire [31:0] dataOut_MEM;
-  wire [31:0] dataMemMuxOut;
 
   datamemory datamem(.clk(clk),
                     .instrOut(instruction_IF),
@@ -284,10 +295,4 @@ input clk
                     .writeEnable(MemWr_MEM),
                     .dataIn(db_MEM));
 
-
-  mux3to1by32 regDwMux(.out(RegVal_WB),
-                      .address(MemtoReg_MEM),
-                      .input0(dataOut_MEM),
-                      .input1(ALUout_MEM),
-                      .input2(PC_plus_four));
 endmodule
