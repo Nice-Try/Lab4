@@ -46,7 +46,7 @@ output reg [2:0] ALUctrl
                  Db = 0,    // for ALUsrc Mux
                 Imm = 1,
              ALUout = 2'b1,    // for MemToReg Mux
-              Dout  = 2'b0;
+              Dout = 2'b0;
 
   always @(*) begin
     case(opcode)
@@ -60,26 +60,26 @@ output reg [2:0] ALUctrl
         ALUctrl = ALUadd; ALUsrc = Imm;
         MemWr = 1;   MemToReg = ALUout;
       end
-      // `J: begin
-      //   RegDst = Rd;  RegWr = 0;
-      //   ALUctrl = ALUxor; ALUsrc = Db;
-      //   MemWr = 0;   MemToReg = ALUout;
-      // end
-      // `JAL: begin
-      //   RegDst = Rd;  RegWr = 1;
-      //   ALUctrl = ALUxor; ALUsrc = Db;
-      //   MemWr = 0;   MemToReg = ALUout;
-      // end
-      // `BEQ: begin
-      //   RegDst = Rd;  RegWr = 0;
-      //   ALUctrl = ALUxor; ALUsrc = Db;
-      //   MemWr = 0;   MemToReg = ALUout;
-      // end
-      // `BNE: begin
-      //   RegDst = Rd;  RegWr = 0;
-      //   ALUctrl = ALUxor; ALUsrc = Db;
-      //   MemWr = 0;   MemToReg = ALUout;
-      // end
+      `J: begin
+        RegDst = Rd;  RegWr = 0;
+        ALUctrl = ALUxor; ALUsrc = Db;
+        MemWr = 0;   MemToReg = ALUout;
+      end
+      `JAL: begin
+        RegDst = Rd;  RegWr = 1;
+        ALUctrl = ALUxor; ALUsrc = Db;
+        MemWr = 0;   MemToReg = ALUout;
+      end
+      `BEQ: begin
+        RegDst = Rd;  RegWr = 0;
+        ALUctrl = ALUxor; ALUsrc = Db;
+        MemWr = 0;   MemToReg = ALUout;
+      end
+      `BNE: begin
+        RegDst = Rd;  RegWr = 0;
+        ALUctrl = ALUxor; ALUsrc = Db;
+        MemWr = 0;   MemToReg = ALUout;
+      end
       `XORI: begin
         RegDst = Rt;  RegWr = 1;
         ALUctrl = ALUxor; ALUsrc = Imm;
@@ -135,27 +135,33 @@ input clk
   //Instruction decoder input
   wire [31:0] instruction_IF;
 
-  // LUT outputs
+  // Register Fetch Phase
   wire       RegDst_RF, // ctrl signal for RegDst mux
              RegWr_RF,
              ALUsrc_RF,
              MemWr_RF,
              MemToReg_RF;
   wire [2:0] ALUctrl_RF;
-  wire [31:0] imm_RF;
-  wire [4:0] regDest_RF; //actual reg address
-  wire [31:0] da_RF,
-              db_RF;
+  wire [4:0] regDest_RF; //actual reg address from RegDst mux
+  wire [31:0]da_RF,   // reg file output
+             db_RF,   // reg file output
+             imm_RF;
+  // Immediate sign extend
+  assign imm_RF = {{16{immediate[15]}}, immediate};
 
+  // Execute Phase
   reg        RegWr_EX,
              ALUsrc_EX,
              MemWr_EX,
              MemToReg_EX;
   reg [2:0]  ALUctrl_EX;
   wire [31:0]ALUout_EX;
-  reg [31:0] imm_EX;
   reg [4:0]  regDest_EX;
+  reg [31:0] da_EX,
+             db_EX,
+             imm_EX;
 
+  // Memory Phase
   reg         RegWr_MEM,
               MemWr_MEM,
               MemToReg_MEM;
@@ -163,33 +169,28 @@ input clk
               db_MEM;
   wire [31:0] RegVal_MEM;
   reg [4:0]   regDest_MEM;
+  wire [31:0] dataMemMuxOut,
+              dataOut_MEM;
 
+  // Write-back Phase
   reg         RegWr_WB;
   reg [4:0]   regDest_WB;
   reg [31:0]  RegVal_WB;
-
-  // data memory to register
-  wire [31:0] dataMemMuxOut;
-  wire [31:0] dataOut_MEM;
-
 
   // PC outputs
   wire [31:0] PC;
   wire [31:0] PC_plus_four;
 
-  // Reg file inputs and outputs
+  // Reg file inputs
   reg [4:0] reg31 = 5'd31;
   wire [4:0] rdMuxOut;
-  wire [31:0] regDataIn;
-  reg [31:0] da_EX,
-              db_EX;
+  wire [31:0]regDataIn;
 
   // ALU src mux
   wire [31:0] ALUsrcMuxOut;
 
   // ALU outputs
   wire        ALUzero;
-
 
   // Reg Dest outputs
   wire [4:0] regDstMuxOut;
@@ -289,9 +290,6 @@ input clk
                   .Clk(clk));
 
   // ALU input
-  // Immediate sign extend
-  assign imm_RF = {{16{immediate[15]}}, immediate};
-
   mux2to1by32 ALUsrcMux(.out(ALUsrcMuxOut),
                   .address(ALUsrc_EX),
                   .input0(db_EX),
