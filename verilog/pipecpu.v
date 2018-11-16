@@ -34,6 +34,7 @@ input [5:0] opcode,
 output reg  RegWr,
             ALUsrc,
             MemWr,
+            Rtype, // High if instruction is r type
 output reg [1:0] MemToReg,
                  RegDst,
 output reg [2:0] ALUctrl
@@ -55,41 +56,49 @@ output reg [2:0] ALUctrl
         RegDst = Rt; RegWr = 1;
         ALUctrl = ALUadd; ALUsrc = Imm;
         MemWr = 0; MemToReg = Dout;
+        Rtype = 0;
       end
       `SW: begin
         RegDst = Rd;  RegWr = 0;
         ALUctrl = ALUadd; ALUsrc = Imm;
         MemWr = 1;   MemToReg = ALUout;
+        Rtype = 0;
       end
       `J: begin
         RegDst = Rd;  RegWr = 0;
         ALUctrl = ALUxor; ALUsrc = Db;
         MemWr = 0;   MemToReg = ALUout;
+        Rtype = 0;
       end
       `JAL: begin
         RegDst = Rd;  RegWr = 1;
         ALUctrl = ALUxor; ALUsrc = Db;
         MemWr = 0;   MemToReg = ALUout;
+        Rtype = 0;
       end
       `BEQ: begin
         RegDst = Rd;  RegWr = 0;
         ALUctrl = ALUxor; ALUsrc = Db;
         MemWr = 0;   MemToReg = ALUout;
+        Rtype = 0;
       end
       `BNE: begin
         RegDst = Rd;  RegWr = 0;
         ALUctrl = ALUxor; ALUsrc = Db;
         MemWr = 0;   MemToReg = ALUout;
+        Rtype = 0;
       end
       `XORI: begin
         RegDst = Rt;  RegWr = 1;
         ALUctrl = ALUxor; ALUsrc = Imm;
         MemWr = 0;   MemToReg = ALUout;
+        Rtype = 0;
       end
       `ADDI: begin
         RegDst = Rt;  RegWr = 1;
         ALUctrl = ALUadd; ALUsrc = Imm;
         MemWr = 0;   MemToReg = ALUout;
+        Rtype = 0;
       end
       `ARITH: begin
         case(funct)
@@ -97,21 +106,25 @@ output reg [2:0] ALUctrl
             RegDst = Rd;  RegWr = 0;
             ALUctrl = ALUxor; ALUsrc = Db;
             MemWr = 0;   MemToReg = ALUout;
+            Rtype = 1;
           end
           `ADD: begin
             RegDst = Rd;  RegWr = 1;
             ALUctrl = ALUadd; ALUsrc = Db;
             MemWr = 0;   MemToReg = ALUout;
+            Rtype = 1;
           end
           `SUB: begin
             RegDst = Rd;  RegWr = 1;
             ALUctrl = ALUsub; ALUsrc = Db;
             MemWr = 0;   MemToReg = ALUout;
+            Rtype = 1;
           end
           `SLT: begin
             RegDst = Rd;  RegWr = 1;
             ALUctrl = ALUslt; ALUsrc = Db;
             MemWr = 0;   MemToReg = ALUout;
+            Rtype = 1;
           end
         endcase
       end
@@ -163,7 +176,8 @@ input clk
   // Register Fetch Phase
   wire       RegWr_RF,
              ALUsrc_RF,
-             MemWr_RF;
+             MemWr_RF,
+             Rtype_RF;
   wire [1:0] RegDst_RF,
              MemToReg_RF;
   reg        BEQ_RF,
@@ -184,7 +198,8 @@ input clk
              ALUsrc_EX,
              MemWr_EX,
              BEQ_EX,
-             BNE_EX;
+             BNE_EX,
+             Rtype_EX;
   reg [1:0]  MemToReg_EX;
   reg [2:0]  ALUctrl_EX;
   wire [31:0]ALUout_EX;
@@ -246,6 +261,7 @@ input clk
     db_EX <= db_RF;
     BEQ_EX <= BEQ_RF;
     BNE_EX <= BNE_RF;
+    Rtype_EX <= Rtype_RF;
 
 
     // EX -> MEM DFFs
@@ -298,7 +314,8 @@ input clk
                     .ALUctrl(ALUctrl_RF),
                     .ALUsrc(ALUsrc_RF),
                     .MemWr(MemWr_RF),
-                    .MemToReg(MemToReg_RF));
+                    .MemToReg(MemToReg_RF),
+                    .Rtype(Rtype_RF));
 
   pipePCUnit pcmodule(.PC(PC),
                     .PC_plus_four(PC_plus_four),
