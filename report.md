@@ -52,10 +52,9 @@ We ensure that there are no structural hazards by making sure every instruction 
 
 ### Control Hazards
 
-To prevent control hazards, stall instructions are sent after `bne`, `beq`, `jr`, `lw` instructions. 
+To prevent control hazards, stall instructions are sent after `bne`, `beq`, and `jr` instructions. After `bne` and `beq`, the cpu stalls for two cycles, giving enough time to determine whether or not a branch should be taken (which happens during the execute phase). It also stalls with a single nop instruction after `jr` so that the jump address can be read out of the register file and then used for the next instruction fetch phase.
 
 ### Data Hazards
-
 
 ## Testing
 
