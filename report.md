@@ -38,6 +38,17 @@ Our LUT is a subset of our LUT last phase, except that we implemented a `nop` in
 
 ## Hazard Mitigation
 
+### Structural Hazards
+
+We ensure that there are no structural hazards by making sure every instruction goes through each phase even if it's not doing anything in that phase. No two instructions will try to go through the same phase and use the same modules at the same time. In the case of the register file and data memory, no two instructions will be accessing the same ports at the same time.
+
+### Control Hazards
+
+To prevent control hazards, stall instructions are sent after `bne`, `beq`, `jr`, `lw` instructions. 
+
+### Data Hazards
+
+
 ## Testing
 
 We tested our pipeline CPU against three assembly tests: [`mips1.asm`](/asmtest/mips1.asm), [`mem.asm`](/asmtest/mem.asm), and [`array_loop.asm`](/asmtest/array_loop.asm). It passes the first two and fails the third due to data hazards. However, if we add `nop`s to the array loop program cleverly (as in [`array_loop_nops.asm`](/asmtest/array_loop_nops.asm)), it does work as expected. Details on functionality are available in the Hazard Mitigation section.
