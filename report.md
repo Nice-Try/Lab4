@@ -5,7 +5,7 @@ Louise Nielsen and Camille Xue
 
 Our architecture closely follows the general idea of the pipeline CPUs from the class slides. Our full diagram is below.
 
-![Diagram](https://image.ibb.co/jRkQ0L/full-pipeline.png)
+![Diagram](https://raw.githubusercontent.com/Nice-Try/Lab4/master/images/full_pipeline.png)
 
 ### Instruction fetch phase
 
@@ -21,16 +21,16 @@ The really interesting part of the IF phase is the PC unit. This PC unit looks a
 
 
 
-<img src="https://image.ibb.co/iHAfZf/RF-phase.png" width="400"/>
+<img src="https://raw.githubusercontent.com/Nice-Try/Lab4/master/images/RF_phase.png" width="400"/>
 
 ### Execute phase
-<img src="https://image.ibb.co/e753n0/EX-phase.png" width="400"/>
+<img src="https://raw.githubusercontent.com/Nice-Try/Lab4/master/images/EX_phase.png" width="400"/>
 
 ### Memory phase
-<img src="https://image.ibb.co/dhH50L/MEM-phase.png" width="400"/>
+<img src="https://raw.githubusercontent.com/Nice-Try/Lab4/master/images/MEM_phase.png" width="400"/>
 
 ### Write back phase
-<img src="https://image.ibb.co/ctu7Ef/WB-phase.png" width="400"/>
+<img src="https://raw.githubusercontent.com/Nice-Try/Lab4/master/images/WB_phase.png" width="400"/>
 
 ## Hazard Mitigation
 
