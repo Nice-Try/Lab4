@@ -10,6 +10,7 @@
 `include "mux5.v"
 `include "mux5_3to1.v"
 `include "mux32_3to1.v"
+`include "dff.v"
 // `include "mux32.v"
 
 `define LW    6'h23
@@ -26,6 +27,7 @@
 `define ADD   6'h20
 `define SUB   6'h22
 `define SLT   6'h2a
+`define NOP   6'h0
 
 module CPUcontrolLUT (
 input       clk,
@@ -34,6 +36,7 @@ input [5:0] opcode,
 output reg  RegWr,
             ALUsrc,
             MemWr,
+            Rtype, // High if instruction is r type
 output reg [1:0] MemToReg,
                  RegDst,
 output reg [2:0] ALUctrl
@@ -55,41 +58,49 @@ output reg [2:0] ALUctrl
         RegDst = Rt; RegWr = 1;
         ALUctrl = ALUadd; ALUsrc = Imm;
         MemWr = 0; MemToReg = Dout;
+        Rtype = 0;
       end
       `SW: begin
         RegDst = Rd;  RegWr = 0;
         ALUctrl = ALUadd; ALUsrc = Imm;
         MemWr = 1;   MemToReg = ALUout;
+        Rtype = 0;
       end
       `J: begin
         RegDst = Rd;  RegWr = 0;
         ALUctrl = ALUxor; ALUsrc = Db;
         MemWr = 0;   MemToReg = ALUout;
+        Rtype = 0;
       end
       `JAL: begin
         RegDst = Rd;  RegWr = 1;
         ALUctrl = ALUxor; ALUsrc = Db;
         MemWr = 0;   MemToReg = ALUout;
+        Rtype = 0;
       end
       `BEQ: begin
         RegDst = Rd;  RegWr = 0;
         ALUctrl = ALUxor; ALUsrc = Db;
         MemWr = 0;   MemToReg = ALUout;
+        Rtype = 0;
       end
       `BNE: begin
         RegDst = Rd;  RegWr = 0;
         ALUctrl = ALUxor; ALUsrc = Db;
         MemWr = 0;   MemToReg = ALUout;
+        Rtype = 0;
       end
       `XORI: begin
         RegDst = Rt;  RegWr = 1;
         ALUctrl = ALUxor; ALUsrc = Imm;
         MemWr = 0;   MemToReg = ALUout;
+        Rtype = 0;
       end
       `ADDI: begin
         RegDst = Rt;  RegWr = 1;
         ALUctrl = ALUadd; ALUsrc = Imm;
         MemWr = 0;   MemToReg = ALUout;
+        Rtype = 0;
       end
       `ARITH: begin
         case(funct)
@@ -97,21 +108,31 @@ output reg [2:0] ALUctrl
             RegDst = Rd;  RegWr = 0;
             ALUctrl = ALUxor; ALUsrc = Db;
             MemWr = 0;   MemToReg = ALUout;
+            Rtype = 1;
           end
           `ADD: begin
             RegDst = Rd;  RegWr = 1;
             ALUctrl = ALUadd; ALUsrc = Db;
             MemWr = 0;   MemToReg = ALUout;
+            Rtype = 1;
           end
           `SUB: begin
             RegDst = Rd;  RegWr = 1;
             ALUctrl = ALUsub; ALUsrc = Db;
             MemWr = 0;   MemToReg = ALUout;
+            Rtype = 1;
           end
           `SLT: begin
             RegDst = Rd;  RegWr = 1;
             ALUctrl = ALUslt; ALUsrc = Db;
             MemWr = 0;   MemToReg = ALUout;
+            Rtype = 1;
+          end
+          `NOP: begin
+            RegDst = Rd;  RegWr = 0;
+            ALUctrl = ALUslt; ALUsrc = Db;
+            MemWr = 0;   MemToReg = ALUout;
+            Rtype = 0;
           end
         endcase
       end
@@ -163,7 +184,8 @@ input clk
   // Register Fetch Phase
   wire       RegWr_RF,
              ALUsrc_RF,
-             MemWr_RF;
+             MemWr_RF,
+             Rtype_RF;
   wire [1:0] RegDst_RF,
              MemToReg_RF;
   reg        BEQ_RF,
@@ -184,7 +206,8 @@ input clk
              ALUsrc_EX,
              MemWr_EX,
              BEQ_EX,
-             BNE_EX;
+             BNE_EX,
+             Rtype_EX;
   reg [1:0]  MemToReg_EX;
   reg [2:0]  ALUctrl_EX;
   wire [31:0]ALUout_EX;
@@ -256,6 +279,7 @@ input clk
     BNE_EX <= BNE_RF;
     rs_EX <= rs_RF;
     rt_EX <= rt_RF;
+    Rtype_EX <= Rtype_RF;
 
 
     // EX -> MEM DFFs
@@ -284,7 +308,7 @@ input clk
 
   // Instruction/NOP mux logic
   // NOTE: This OR gate might also need BEQ_EX and BNE_EX, not sure
-  assign stall_mux = (BEQ_RF | BNE_RF | JR_RF | LW_RF);
+  assign stall_mux = (BEQ_RF | BNE_RF | BEQ_EX | BNE_EX | JR_RF | LW_RF);
   mux2to1by32 mux_NOP(.out(instruction_IF),
               .address(stall_mux),
               .input0(instruction),
@@ -308,7 +332,8 @@ input clk
                     .ALUctrl(ALUctrl_RF),
                     .ALUsrc(ALUsrc_RF),
                     .MemWr(MemWr_RF),
-                    .MemToReg(MemToReg_RF));
+                    .MemToReg(MemToReg_RF),
+                    .Rtype(Rtype_RF));
 
   pipePCUnit pcmodule(.PC(PC),
                     .PC_plus_four(PC_plus_four),
@@ -351,15 +376,26 @@ input clk
                   .RegWrite(RegWr_WB),
                   .Clk(clk));
 
-  // Data forwarding logic
-  assign ALUin0ctrl = RegWr_MEM && (~| (regDest_MEM ^ rs_EX));
-  assign ALUin1ctrl = (RegWr_MEM && (~|(regDest_MEM ^ rt_EX)) && (BEQ_EX | BNE_EX | Rtype_EX));
-
   // ALU input
   mux2to1by32 ALUsrcMux(.out(ALUsrcMuxOut),
                   .address(ALUsrc_EX),
                   .input0(db_EX),
                   .input1(imm_EX));
+
+  // Data forwarding logic
+  assign ALUin0ctrl = RegWr_MEM && (~| (regDest_MEM ^ rs_EX));
+  assign ALUin1ctrl = (RegWr_MEM && (~|(regDest_MEM ^ rt_EX)) && (BEQ_EX | BNE_EX | Rtype_EX));
+
+  mux2to1by32 ALUin0mux(.out(ALUin0),
+                  .address(ALUin0ctrl),
+                  .input0(da_EX),
+                  .input1(ALUout_MEM));
+
+  mux2to1by32 ALUin1mux(.out(ALUin1),
+                  .address(ALUin1ctrl),
+                  .input0(ALUsrcMuxOut),
+                  .input1(ALUout_MEM));
+
 
   ALU alu(.result(ALUout_EX),
                   .carryout(),

@@ -1,7 +1,7 @@
 #! /bin/bash
 
-rm mips1.text.hex
-mars a mc CompactTextAtZero dump .text HexText mips1.text.hex ../asmtest/mips1.asm
+rm fib_func.text.hex
+mars a mc CompactTextAtZero dump .text HexText fib_func.text.hex ../asmtest/fib_func/fib_func.asm
 
 iverilog -Wall -o pipecpu.vvp pipecpu.t.v
 ./pipecpu.vvp

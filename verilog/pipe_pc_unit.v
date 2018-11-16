@@ -23,6 +23,10 @@ input         stall_MUX,          // Whether the NOP mux is stalled
               JR_RF,              // whether it is JR from the RF phase
               LW_IF               // whether it is LW from the IF phase
 );
+
+  // Stall PC
+  wire stall_PC;
+
   // Branch control wires
   wire [31:0] branchAddr,
               pc_plus_four_plus_branch,
@@ -32,14 +36,20 @@ input         stall_MUX,          // Whether the NOP mux is stalled
               nALUZero,
               branchctrl;
 
+  // Stall PC
+
   // Jump control wires
   wire [31:0] jumpAddr,
               muxJROut,
               muxJumpOut;
   wire        jumpctrl;
 
+  // Stall PC logic
+  assign stall_PC = ~(stall_MUX | BEQ_IF | JR_IF | LW_IF);
+
   // PC
-  pc_dff #(32) pc(.trigger(clk),
+  dff #(32) pc(.trigger(clk),
+              .enable(stall_PC),
               .d(muxJumpOut),
               .q(PC));
 

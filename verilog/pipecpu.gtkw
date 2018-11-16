@@ -1,30 +1,35 @@
 [*]
 [*] GTKWave Analyzer v3.3.94 (w)1999-2018 BSI
-[*] Thu Nov 15 19:36:10 2018
+[*] Fri Nov 16 02:48:30 2018
 [*]
-[dumpfile] "/home/comparch/Documents/Lab4/verilog/pipecpu.vcd"
-[dumpfile_mtime] "Thu Nov 15 19:31:13 2018"
-[dumpfile_size] 128467
-[savefile] "/home/comparch/Documents/Lab4/verilog/pipecpu.gtkw"
+[dumpfile] "/home/comparch/Lab4/verilog/pipecpu.vcd"
+[dumpfile_mtime] "Fri Nov 16 02:47:14 2018"
+[dumpfile_size] 179852
+[savefile] "/home/comparch/Lab4/verilog/pipecpu.gtkw"
 [timestart] 0
-[size] 1855 926
+[size] 1855 923
 [pos] -1 -1
 *-5.000000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] pipecpu_test.
 [treeopen] pipecpu_test.pipecpu.
 [sst_width] 225
-[signals_width] 174
+[signals_width] 190
 [sst_expanded] 1
 [sst_vpaned_height] 275
+@28
+pipecpu_test.pipecpu.clk
+@4022
+^>1 /usr/local/bin/mips-dasm-filter
+pipecpu_test.pipecpu.instruction_IF[31:0]
 @22
 pipecpu_test.pipecpu.PC[31:0]
 @2022
-^2 /home/comparch/Documents/in-class/day14/filters/mips-opcodes.filter
+^1 /home/comparch/in-class/day14/filters/mips-opcodes.filter
 pipecpu_test.pipecpu.opcode[5:0]
 @22
 pipecpu_test.pipecpu.regFile.WriteData[31:0]
 @2022
-^1 /home/comparch/Documents/in-class/day14/filters/mips-regs.filter
+^2 /home/comparch/in-class/day14/filters/mips-regs.filter
 pipecpu_test.pipecpu.regFile.WriteRegister[4:0]
 @22
 pipecpu_test.pipecpu.regFile.reg9_out[31:0]
@@ -34,12 +39,8 @@ pipecpu_test.pipecpu.datamem.address[31:0]
 pipecpu_test.pipecpu.datamem.dataIn[31:0]
 pipecpu_test.pipecpu.datamem.dataOut[31:0]
 pipecpu_test.pipecpu.immediate[15:0]
-@2023
-^1 /home/comparch/Documents/in-class/day14/filters/mips-regs.filter
-pipecpu_test.pipecpu.rs[4:0]
-^1 /home/comparch/Documents/in-class/day14/filters/mips-regs.filter
-pipecpu_test.pipecpu.rt[4:0]
-^1 /home/comparch/Documents/in-class/day14/filters/mips-regs.filter
+@2022
+^2 /home/comparch/in-class/day14/filters/mips-regs.filter
 pipecpu_test.pipecpu.rd[4:0]
 [pattern_trace] 1
 [pattern_trace] 0

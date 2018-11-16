@@ -10,13 +10,13 @@ module pipecpu_test();
 
   initial begin
 
-  $readmemh("mips1.text.hex", pipecpu.datamem.memory, 0);
+  $readmemh("fib_func.text.hex", pipecpu.datamem.memory, 0);
 
-  $readmemh("mips1.text.hex", pipecpu.datamem.memory, 2048);
+  $readmemh("fib_func.text.hex", pipecpu.datamem.memory, 2048);
 
   $dumpfile("pipecpu.vcd");
   $dumpvars();
 
-  #5000 $finish();
+  #50000 $finish();
   end
 endmodule

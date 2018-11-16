@@ -7,9 +7,12 @@ module dff #( parameter W = 1 )
     input      [W-1:0] d,
     output reg [W-1:0] q
 );
+  initial begin
+    q <= 0;
+  end
     always @(posedge trigger) begin
         if(enable) begin
             q <= d;
-        end 
+        end
     end
 endmodule
