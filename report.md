@@ -52,10 +52,11 @@ We ensure that there are no structural hazards by making sure every instruction 
 
 ### Control Hazards
 
-To prevent control hazards, stall instructions are sent after `bne`, `beq`, `jr`, `lw` instructions. 
+To prevent control hazards, stall instructions are sent after `bne`, `beq`, `jr`, `lw` instructions.
 
 ### Data Hazards
 
+To mitigate data hazards, we implemented data forwarding for several types of instructions. We can mitigate hazards for R-type instructions for both registers `rs` and `rt`, and for I-type instructions for register `rs`. Additionally, we stall one cycle after every `lw` instruction to mitigate data hazards from that (because you can never get what `lw` is pulling from memory before the memory phase). This doesn't address data hazards with `jr` (instead, pad with `nop`s if `jr` happens fewer than 4 cycles after `jal`) or `sw` (we do not support forwarding of register `rt` values for I-type instructions).
 
 ## Testing
 
