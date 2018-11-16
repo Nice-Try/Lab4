@@ -427,22 +427,22 @@ input clk
   mux2to1by32 ALUin0muxa(.out(ALUin0a),
                   .address(ALUin0ctrl),
                   .input0(da_EX),
-                  .input1(ALUout_MEM));
+                  .input1(RegVal_MEM));
 
   mux2to1by32 ALUin1muxa(.out(ALUin1a),
                   .address(ALUin1ctrl),
                   .input0(ALUsrcMuxOut),
-                  .input1(ALUout_MEM));
+                  .input1(RegVal_MEM));
 
   mux2to1by32 ALUin0mux(.out(ALUin0),
                   .address(ALUin0ctrl1),
                   .input0(ALUin0a),
-                  .input1(ALUout_WB));
+                  .input1(RegVal_WB));
 
   mux2to1by32 ALUin1mux(.out(ALUin1),
                   .address(ALUin1ctrl1),
                   .input0(ALUin1a),
-                  .input1(ALUout_WB));
+                  .input1(RegVal_WB));
 
 
   ALU alu(.result(ALUout_EX),
