@@ -10,9 +10,9 @@ module pipecpu_test();
 
   initial begin
 
-  $readmemh("array_loop.text.hex", pipecpu.datamem.memory, 0);
+  $readmemh("func.text.hex", pipecpu.datamem.memory, 0);
 
-  $readmemh("array_loop.data.hex", pipecpu.datamem.memory, 2048);
+  $readmemh("func.data.hex", pipecpu.datamem.memory, 2048);
 
   $dumpfile("pipecpu.vcd");
   $dumpvars();

@@ -73,9 +73,9 @@ output reg [2:0] ALUctrl
         Rtype = 0;
       end
       `JAL: begin
-        RegDst = Rd;  RegWr = 1;
+        RegDst = 2'd2;  RegWr = 1;
         ALUctrl = ALUxor; ALUsrc = Db;
-        MemWr = 0;   MemToReg = ALUout;
+        MemWr = 0;   MemToReg = 2'd2;
         Rtype = 0;
       end
       `BEQ: begin
@@ -222,8 +222,8 @@ input clk
   wire [4:0] regDest_RF; //actual reg address from RegDst mux
   wire [31:0]da_RF,   // reg file output
              db_RF;   // reg file output
-             // imm_RF;  // Immediate sign extend
-  reg  [31:0]instruction_RF;
+  reg  [31:0]instruction_RF,
+             PC_plus_four_RF;
 
   wire [31:0]imm32_EX;
   // assign imm_RF = {{16{immediate[15]}}, immediate};
@@ -241,7 +241,8 @@ input clk
   wire [31:0]ALUout_EX;
   reg [4:0]  regDest_EX;
   reg [31:0] da_EX,
-             db_EX;
+             db_EX,
+             PC_plus_four_EX;
   reg [15:0] imm_EX;
   reg  [4:0] rs_EX,
              rt_EX;
@@ -251,7 +252,8 @@ input clk
               MemWr_MEM;
   reg [1:0]   MemToReg_MEM;
   reg [31:0]  ALUout_MEM,
-              db_MEM;
+              db_MEM,
+              PC_plus_four_MEM;
   wire [31:0] RegVal_MEM;
   reg [4:0]   regDest_MEM;
   wire [31:0] dataMemMuxOut,
@@ -265,7 +267,7 @@ input clk
 
   // PC outputs
   wire [31:0] PC;
-  wire [31:0] PC_plus_four;
+  wire [31:0] PC_plus_four_IF;
 
   // Data forwarding wires
   wire ALUin0ctrl;
@@ -277,7 +279,7 @@ input clk
   wire [31:0] ALUin0;
   wire [31:0] ALUin1;
 
-  // Reg file inputs
+  // Reg file inputsPC_plus
   reg [4:0] reg31 = 5'd31;
   wire [4:0] rdMuxOut;
   wire [31:0]regDataIn;
@@ -298,6 +300,7 @@ input clk
     BNE_RF <= BNE_IF;
     JR_RF <= JR_IF;
     LW_RF <= LW_IF;
+    PC_plus_four_RF <= PC_plus_four_IF;
 
     // RF -> EX DFFs
     RegWr_EX <= RegWr_RF;
@@ -313,6 +316,8 @@ input clk
     rs_EX <= rs_RF;
     rt_EX <= rt_RF;
     Rtype_EX <= Rtype_RF;
+    imm_EX <= imm_RF;
+    PC_plus_four_EX <= PC_plus_four_RF;
 
 
     // EX -> MEM DFFs
@@ -322,7 +327,7 @@ input clk
     db_MEM <= db_EX;
     regDest_MEM <= regDest_EX;
     ALUout_MEM <= ALUout_EX;
-    imm_EX <= imm_RF;
+    PC_plus_four_MEM <= PC_plus_four_EX;
 
     // MEM -> WB DFFs
     regDest_WB <= regDest_MEM;
@@ -336,7 +341,7 @@ input clk
   assign JAL_IF = ~| (instruction_IF[31:26] ^ `JAL);
   assign BEQ_IF = ~| (instruction_IF[31:26] ^ `BEQ);
   assign BNE_IF = ~| (instruction_IF[31:26] ^ `BNE);
-  assign JR_IF = (~|(instruction_IF[31:26] ^ 6'b0)) && (~|(instruction[5:0] ^ `JR));
+  assign JR_IF = (~|(instruction_IF[31:26] ^ 6'b0)) && (~|(instruction_IF[5:0] ^ `JR));
   assign LW_IF = ~| (instruction_IF[31:26] ^ `LW);
   assign address_IF = instruction_IF[25:0];
 
@@ -370,12 +375,11 @@ input clk
                     .Rtype(Rtype_RF));
 
   pipePCUnit pcmodule(.PC(PC),
-                    .PC_plus_four(PC_plus_four),
+                    .PC_plus_four(PC_plus_four_IF),
                     .clk(clk),
                     .da_RF(da_RF),
                     .address(address_IF),
                     .imm_EX(imm_EX),
-                    .stall_MUX(stall_mux),
                     .ALUZero(ALUzero),
                     .BEQ_IF(BEQ_IF),
                     .BNE_IF(BNE_IF),
@@ -401,7 +405,7 @@ input clk
                         .address(MemToReg_MEM),
                         .input0(dataOut_MEM),
                         .input1(ALUout_MEM),
-                        .input2(PC_plus_four));
+                        .input2(PC_plus_four_MEM));
 
   regfile regFile(.ReadData1(da_RF),
                   .ReadData2(db_RF),
