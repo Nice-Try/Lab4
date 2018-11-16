@@ -268,7 +268,7 @@ input             clk
 );
 
   // Just like the 1-bit register
-  always @(posedge clk) begin
+  always @(negedge clk) begin
     if (wrenable) begin
       q <= d;
     end
