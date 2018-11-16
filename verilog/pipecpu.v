@@ -144,8 +144,8 @@ input clk
   // Instruction decoder outputs
   wire[5:0] opcode,
             funct;
-  wire[4:0] rs,
-            rt,
+  wire[4:0] rs_RF,
+            rt_RF,
             rd;
   wire [15:0] immediate;
   wire [25:0] address;
@@ -192,6 +192,8 @@ input clk
   reg [31:0] da_EX,
              db_EX,
              imm_EX;
+  reg  [4:0] rs_EX,
+             rt_EX;
 
   // Memory Phase
   reg         RegWr_MEM,
@@ -212,6 +214,12 @@ input clk
   // PC outputs
   wire [31:0] PC;
   wire [31:0] PC_plus_four;
+
+  // Data forwarding wires
+  wire ALUin0ctrl;
+  wire ALUin1ctrl;
+  wire [31:0] ALUin0;
+  wire [31:0] ALUin1;
 
   // Reg file inputs
   reg [4:0] reg31 = 5'd31;
@@ -246,6 +254,8 @@ input clk
     db_EX <= db_RF;
     BEQ_EX <= BEQ_RF;
     BNE_EX <= BNE_RF;
+    rs_EX <= rs_RF;
+    rt_EX <= rt_RF;
 
 
     // EX -> MEM DFFs
@@ -283,8 +293,8 @@ input clk
 
   instruction_decoder instrdecoder(.instruction(instruction_RF),
                       .opcode(opcode),
-                      .rs(rs),
-                      .rt(rt),
+                      .rs(rs_RF),
+                      .rt(rt_RF),
                       .rd(rd),
                       .funct(funct),
                       .immediate(immediate),
@@ -323,7 +333,7 @@ input clk
   mux3to1by5 rdMux(.out(regDest_RF), // actual register address
                   .address(RegDst_RF), // ctrl signal
                   .input0(rd),
-                  .input1(rt),
+                  .input1(rt_RF),
                   .input2(reg31));
 
   mux3to1by32 regdataMux(.out(RegVal_MEM),
@@ -335,11 +345,15 @@ input clk
   regfile regFile(.ReadData1(da_RF),
                   .ReadData2(db_RF),
                   .WriteData(RegVal_WB),
-                  .ReadRegister1(rs),
-                  .ReadRegister2(rt),
+                  .ReadRegister1(rs_RF),
+                  .ReadRegister2(rt_RF),
                   .WriteRegister(regDest_WB),
                   .RegWrite(RegWr_WB),
                   .Clk(clk));
+
+  // Data forwarding logic
+  assign ALUin0ctrl = RegWr_MEM && (~| (regDest_MEM ^ rs_EX));
+  assign ALUin1ctrl = (RegWr_MEM && (~|(regDest_MEM ^ rt_EX)) && (BEQ_EX | BNE_EX | Rtype_EX));
 
   // ALU input
   mux2to1by32 ALUsrcMux(.out(ALUsrcMuxOut),
