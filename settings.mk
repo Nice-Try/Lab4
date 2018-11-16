@@ -17,4 +17,4 @@ DATAMEMDUMP := $(PROGRAM).data.hex
 TOPLEVEL := pipecpu
 
 # All circuits included by the toplevel $(TOPLEVEL).t.v
-CIRCUITS := $(TOPLEVEL).v counter.v
+CIRCUITS := $(TOPLEVEL).v //counter.v
