@@ -10,6 +10,7 @@ Louise Nielsen and Camille Xue
 <!-- <img src="https://image.ibb.co/ctu7Ef/WB-phase.png" width="400"/> -->
 
 ## Hazard Mitigation
+![timing](https://image.ibb.co/kL78n0/timing-diagram.png)
 
 ## Testing
 
