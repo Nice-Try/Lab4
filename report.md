@@ -65,3 +65,7 @@ We tested our pipeline CPU against three assembly tests: [`mips1.asm`](/asmtest/
 Getting to that point took a lot of gtkwave and time.
 
 ## Workplan Reflection
+
+We did fairly well. Our paper design was done by Wednesday afternoon (a day later than expected). We additionally modified our strategy partway through to write and debug a naive pipeline CPU (without control flow, control hazard mitigation, or data hazard mitigation) before we made it more complex; this was done by Thursday. We were debugging a complex implementation by Thursday evening, and by Friday afternoon we had a reasonably functional pipeline CPU and a pretty good idea of where and why it wasn't functional. We wrote the report and finished 2 hours later than expected. However, our time estimates were off. Camille doesn't keep track of her time obsessively, but Louise spent about twice as much time this week on this lab than the work plan says they should have.
+
+We learned that it's a good idea to use your resources a lot (thanks Ben!) and to make simpler, smaller things to test before making it really complicated.
