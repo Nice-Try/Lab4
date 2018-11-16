@@ -11,7 +11,7 @@ Our architecture closely follows the general idea of the pipeline CPUs from the 
 
 Here we access instruction memory (really a subset of data memory) based on the current PC address and mux it with a `nop` instruction (all zeros). The rationale behind the control signal there is explained in the Hazard Mitigation section. Not pictured in the diagram is some decoding of `instruction` (after the mux with `nop`) in order to handle control flow and control flow hazards.
 
-<img src="https://image.ibb.co/iomnEf/IF-phase.png" width="400"/>
+<img src="https://raw.githubusercontent.com/Nice-Try/Lab4/master/images/IF_phase.png" width="400"/>
 
 The really interesting part of the IF phase is the PC unit. This PC unit looks a lot like our single cycle CPU's PC unit with two exceptions: several of the inputs from the single cycle CPU's LUT are from specific phases in our pipeline CPU, and the PC D flip flop itself has an enable. The inputs to the enable are explained more in the Hazard Mitigation section. The inputs from specific phases are part of the managing of control flow - for example, we don't know if we should branch or not for a `BEQ` or `BNE` instruction until that instruction has made it to the EX phase, so we use the `BEQ_EX` and `BNE_EX` flags to determine whether to take a branch or not.
 
