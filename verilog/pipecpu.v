@@ -151,10 +151,36 @@ input clk
     BNE_RF <= 0;
     JR_RF <= 0;
     LW_RF <= 0;
+    instruction_RF <= 0;
 
     // EX phase
     BEQ_EX <= 0;
     BNE_EX <= 0;
+    rs_EX <= 0;
+    RegWr_EX <= 0;
+    ALUsrc_EX <= 0;
+    MemWr_EX <= 0;
+    Rtype_EX <= 0;
+    MemToReg_EX <= 0;
+    ALUctrl_EX <= 0;
+    regDest_EX <= 0;
+    da_EX <= 0;
+    db_EX <= 0;
+    imm_EX <= 0;
+    rt_EX <= 0;
+
+    // MEM phase
+    regDest_MEM <= 0;
+    RegWr_MEM <= 0;
+    MemWr_MEM <= 0;
+    MemToReg_MEM <= 0;
+    ALUout_MEM <= 0;
+    db_MEM <= 0;
+
+    // WB phase
+    RegWr_WB <= 0;
+    regDest_WB <= 0;
+    RegVal_WB <= 0;
   end
 
   // Instruction fetch NOP wires
@@ -168,7 +194,7 @@ input clk
   wire[4:0] rs_RF,
             rt_RF,
             rd;
-  wire [15:0] immediate;
+  wire [15:0] imm_RF;
   wire [25:0] address;
 
   // Instruction Fetch Phase
@@ -195,11 +221,13 @@ input clk
   wire [2:0] ALUctrl_RF;
   wire [4:0] regDest_RF; //actual reg address from RegDst mux
   wire [31:0]da_RF,   // reg file output
-             db_RF,   // reg file output
-             imm_RF;  // Immediate sign extend
+             db_RF;   // reg file output
+             // imm_RF;  // Immediate sign extend
   reg  [31:0]instruction_RF;
 
-  assign imm_RF = {{16{immediate[15]}}, immediate};
+  wire [31:0]imm32_EX;
+  // assign imm_RF = {{16{immediate[15]}}, immediate};
+  assign imm32_EX = {{16{imm_EX[15]}}, imm_EX};
 
   // Execute Phase
   reg        RegWr_EX,
@@ -213,8 +241,8 @@ input clk
   wire [31:0]ALUout_EX;
   reg [4:0]  regDest_EX;
   reg [31:0] da_EX,
-             db_EX,
-             imm_EX;
+             db_EX;
+  reg [15:0] imm_EX;
   reg  [4:0] rs_EX,
              rt_EX;
 
@@ -232,7 +260,8 @@ input clk
   // Write-back Phase
   reg         RegWr_WB;
   reg [4:0]   regDest_WB;
-  reg [31:0]  RegVal_WB;
+  reg [31:0]  RegVal_WB,
+              ALUout_WB;
 
   // PC outputs
   wire [31:0] PC;
@@ -241,6 +270,10 @@ input clk
   // Data forwarding wires
   wire ALUin0ctrl;
   wire ALUin1ctrl;
+  wire ALUin0ctrl1;
+  wire ALUin1ctrl1;
+  wire [31:0] ALUin0a;
+  wire [31:0] ALUin1a;
   wire [31:0] ALUin0;
   wire [31:0] ALUin1;
 
@@ -295,16 +328,17 @@ input clk
     regDest_WB <= regDest_MEM;
     RegWr_WB <= RegWr_MEM;
     RegVal_WB <= RegVal_MEM;
+    ALUout_WB <= ALUout_MEM;
   end
 
   // Necessary decoding in IF phase
-  assign J_IF = ~| (instruction[31:26] ^ `J);
-  assign JAL_IF = ~| (instruction[31:26] ^ `JAL);
-  assign BEQ_IF = ~| (instruction[31:26] ^ `BEQ);
-  assign BNE_IF = ~| (instruction[31:26] ^ `BNE);
-  assign JR_IF = (~|(instruction[31:26] ^ 6'b0)) && (~|(instruction[5:0] ^ `JR));
-  assign LW_IF = ~| (instruction[31:26] ^ `LW);
-  assign address_IF = instruction[25:0];
+  assign J_IF = ~| (instruction_IF[31:26] ^ `J);
+  assign JAL_IF = ~| (instruction_IF[31:26] ^ `JAL);
+  assign BEQ_IF = ~| (instruction_IF[31:26] ^ `BEQ);
+  assign BNE_IF = ~| (instruction_IF[31:26] ^ `BNE);
+  assign JR_IF = (~|(instruction_IF[31:26] ^ 6'b0)) && (~|(instruction[5:0] ^ `JR));
+  assign LW_IF = ~| (instruction_IF[31:26] ^ `LW);
+  assign address_IF = instruction_IF[25:0];
 
   // Instruction/NOP mux logic
   // NOTE: This OR gate might also need BEQ_EX and BNE_EX, not sure
@@ -321,7 +355,7 @@ input clk
                       .rt(rt_RF),
                       .rd(rd),
                       .funct(funct),
-                      .immediate(immediate),
+                      .immediate(imm_RF),
                       .address(address));
 
   CPUcontrolLUT LUT(.clk(clk),
@@ -345,6 +379,8 @@ input clk
                     .ALUZero(ALUzero),
                     .BEQ_IF(BEQ_IF),
                     .BNE_IF(BNE_IF),
+                    .BEQ_RF(BEQ_RF),
+                    .BNE_RF(BNE_RF),
                     .BEQ_EX(BEQ_EX),
                     .BNE_EX(BNE_EX),
                     .J_IF(J_IF),
@@ -380,29 +416,41 @@ input clk
   mux2to1by32 ALUsrcMux(.out(ALUsrcMuxOut),
                   .address(ALUsrc_EX),
                   .input0(db_EX),
-                  .input1(imm_EX));
+                  .input1(imm32_EX));
 
   // Data forwarding logic
   assign ALUin0ctrl = RegWr_MEM && (~| (regDest_MEM ^ rs_EX));
   assign ALUin1ctrl = (RegWr_MEM && (~|(regDest_MEM ^ rt_EX)) && (BEQ_EX | BNE_EX | Rtype_EX));
+  assign ALUin0ctrl1 = RegWr_WB && (~| (regDest_WB ^ rs_EX));
+  assign ALUin1ctrl1 = (RegWr_WB && (~|(regDest_WB ^ rt_EX)) && (BEQ_EX | BNE_EX | Rtype_EX));
 
-  mux2to1by32 ALUin0mux(.out(ALUin0),
+  mux2to1by32 ALUin0muxa(.out(ALUin0a),
                   .address(ALUin0ctrl),
                   .input0(da_EX),
                   .input1(ALUout_MEM));
 
-  mux2to1by32 ALUin1mux(.out(ALUin1),
+  mux2to1by32 ALUin1muxa(.out(ALUin1a),
                   .address(ALUin1ctrl),
                   .input0(ALUsrcMuxOut),
                   .input1(ALUout_MEM));
+
+  mux2to1by32 ALUin0mux(.out(ALUin0),
+                  .address(ALUin0ctrl1),
+                  .input0(ALUin0a),
+                  .input1(ALUout_WB));
+
+  mux2to1by32 ALUin1mux(.out(ALUin1),
+                  .address(ALUin1ctrl1),
+                  .input0(ALUin1a),
+                  .input1(ALUout_WB));
 
 
   ALU alu(.result(ALUout_EX),
                   .carryout(),
                   .zero(ALUzero),
                   .overflow(),
-                  .operandA(da_EX),
-                  .operandB(ALUsrcMuxOut),
+                  .operandA(ALUin0),
+                  .operandB(ALUin1),
                   .command(ALUctrl_EX));
 
 

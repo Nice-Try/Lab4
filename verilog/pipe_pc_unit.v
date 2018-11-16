@@ -10,11 +10,13 @@ output [31:0] PC,                 // current output of PC
 input         clk,                // System clock
 input  [31:0] da_RF,              // Reg output a from RF phase (for JR ctrl)
 input  [25:0] address,            // Jump address from instruction
-input  [31:0] imm_EX,             // Immediate from EX phase
+input  [15:0] imm_EX,             // Immediate from EX phase
 input         stall_MUX,          // Whether the NOP mux is stalled
               ALUZero,            // Zero output of ALU (from EX phase)
               BEQ_IF,             // whether it is BEQ from the IF phase
               BNE_IF,             // whether it is BNE from the IF phase
+              BEQ_RF,
+              BNE_RF,
               BEQ_EX,             // whether it is BEQ from the EX phase
               BNE_EX,             // whether it is BNE from the EX phase
               J_IF,               // whether it is J from the IF phase
@@ -31,10 +33,11 @@ input         stall_MUX,          // Whether the NOP mux is stalled
   wire [31:0] branchAddr,
               pc_plus_four_plus_branch,
               muxBranchOut;
-  wire        BEQctrl,
-              BNEctrl,
-              nALUZero,
-              branchctrl;
+  wire        branchctrl;
+  // wire        BEQctrl,
+  //             BNEctrl,
+  //             nALUZero,
+  //             branchctrl;
 
   // Stall PC
 
@@ -45,11 +48,11 @@ input         stall_MUX,          // Whether the NOP mux is stalled
   wire        jumpctrl;
 
   // Stall PC logic
-  assign stall_PC = ~(stall_MUX | BEQ_IF | JR_IF | LW_IF);
+  assign stall_PC = (BEQ_IF | BNE_IF | BEQ_RF | BNE_RF | JR_IF | LW_IF);
 
   // PC
   dff #(32) pc(.trigger(clk),
-              .enable(stall_PC),
+              .enable(~(stall_PC)),
               .d(muxJumpOut),
               .q(PC));
 
@@ -62,13 +65,15 @@ input         stall_MUX,          // Whether the NOP mux is stalled
               .subtract(1'b0));
 
   // Branch address
-  assign branchAddr = imm_EX << 10;
+  // assign branchAddr = imm_EX << 10;
+  assign branchAddr = {{14{imm_EX[15]}}, imm_EX, 2'b0};
 
   // Branch control
-  and and0(BEQctrl, BEQ_EX, ALUZero);       // If BEQ and ALUZero
-  not inv(nALUZero, ALUZero);
-  and and1(BNEctrl, BNE_EX, nALUZero);      // Or if BNE and not ALUZero
-  or orgate(branchctrl, BEQctrl, BNEctrl);  // Then take branch address in mux
+  assign branchctrl = (BEQ_EX & ALUZero) | (BNE_EX & ~(ALUZero));
+  // and and0(BEQctrl, BEQ_EX, ALUZero);       // If BEQ and ALUZero
+  // not inv(nALUZero, ALUZero);
+  // and and1(BNEctrl, BNE_EX, nALUZero);      // Or if BNE and not ALUZero
+  // or orgate(branchctrl, BEQctrl, BNEctrl);  // Then take branch address in mux
 
   // PC + 4 + branch address
   full32BitAdder addBranch(.sum(pc_plus_four_plus_branch),

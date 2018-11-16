@@ -10,12 +10,13 @@ module pipecpu_test();
 
   initial begin
 
-  $readmemh("fib_func.text.hex", pipecpu.datamem.memory, 0);
+  $readmemh("array_loop.text.hex", pipecpu.datamem.memory, 0);
 
-  $readmemh("fib_func.text.hex", pipecpu.datamem.memory, 2048);
+  $readmemh("array_loop.data.hex", pipecpu.datamem.memory, 2048);
 
   $dumpfile("pipecpu.vcd");
   $dumpvars();
+  $dumpvars(pipecpu.datamem.memory[2048]);
 
   #50000 $finish();
   end
