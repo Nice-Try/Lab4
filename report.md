@@ -30,6 +30,7 @@ The really interesting part of the IF phase is the PC unit. This PC unit looks a
 <img src="https://image.ibb.co/ctu7Ef/WB-phase.png" width="400"/>
 
 ## Hazard Mitigation
+![timing](https://image.ibb.co/kL78n0/timing-diagram.png)
 
 ## Testing
 
@@ -38,3 +39,17 @@ We tested our pipeline CPU against three assembly tests: [`mips1.asm`](/asmtest/
 Getting to that point took a lot of gtkwave and time.
 
 ## Workplan Reflection
+
+
+## Diagram Image Links
+[Full Pipeline Diagram](https://ibb.co/dydOn0)
+
+[IF Phase](https://ibb.co/kC3CfL)
+
+[RF Phase](https://ibb.co/fy1b70)
+
+[EX Phase](https://ibb.co/eObb70)
+
+[MEM Phase](https://ibb.co/mjmyLL)
+
+[WB Phase](https://ibb.co/mt1XfL)
