@@ -1,4 +1,4 @@
-# Nice Try Lab 3 Report
+# Nice Try Lab 4 Report
 Louise Nielsen and Camille Xue
 
 ## CPU Architecture
