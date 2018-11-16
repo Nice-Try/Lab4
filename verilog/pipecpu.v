@@ -123,11 +123,23 @@ module pipeCPU
 (
 input clk
 );
+  // Initial values for control signals
+  initial begin
+    // RF phase
+    BEQ_RF <= 0;
+    BNE_RF <= 0;
+    JR_RF <= 0;
+    LW_RF <= 0;
+
+    // EX phase
+    BEQ_EX <= 0;
+    BNE_EX <= 0;
+  end
 
   // Instruction fetch NOP wires
   wire [31:0] instruction;
   reg  [31:0] NOP = 32'b0;
-  wire  [1:0] stall_mux;
+  wire        stall_mux;
 
   // Instruction decoder outputs
   wire[5:0] opcode,
@@ -140,18 +152,21 @@ input clk
 
   // Instruction Fetch Phase
   wire [31:0] instruction_IF;
+  wire [25:0] address_IF;
   wire        BEQ_IF,
               BNE_IF,
+              J_IF,
+              JAL_IF,
               JR_IF,
               LW_IF;
 
   // Register Fetch Phase
-  wire       RegDst_RF, // ctrl signal for RegDst mux
-             RegWr_RF,
+  wire       RegWr_RF,
              ALUsrc_RF,
-             MemWr_RF,
-             MemToReg_RF,
-             BEQ_RF,
+             MemWr_RF;
+  wire [1:0] RegDst_RF,
+             MemToReg_RF;
+  reg        BEQ_RF,
              BNE_RF,
              JR_RF,
              LW_RF;
@@ -159,17 +174,18 @@ input clk
   wire [4:0] regDest_RF; //actual reg address from RegDst mux
   wire [31:0]da_RF,   // reg file output
              db_RF,   // reg file output
-             imm_RF;
-  // Immediate sign extend
+             imm_RF;  // Immediate sign extend
+  reg  [31:0]instruction_RF;
+
   assign imm_RF = {{16{immediate[15]}}, immediate};
 
   // Execute Phase
   reg        RegWr_EX,
              ALUsrc_EX,
              MemWr_EX,
-             MemToReg_EX,
              BEQ_EX,
              BNE_EX;
+  reg [1:0]  MemToReg_EX;
   reg [2:0]  ALUctrl_EX;
   wire [31:0]ALUout_EX;
   reg [4:0]  regDest_EX;
@@ -179,8 +195,8 @@ input clk
 
   // Memory Phase
   reg         RegWr_MEM,
-              MemWr_MEM,
-              MemToReg_MEM;
+              MemWr_MEM;
+  reg [1:0]   MemToReg_MEM;
   reg [31:0]  ALUout_MEM,
               db_MEM;
   wire [31:0] RegVal_MEM;
@@ -248,7 +264,13 @@ input clk
   end
 
   // Necessary decoding in IF phase
-  // TODO: make BEQ_IF, BNE_IF, JR_IF, LW_IF
+  assign J_IF = ~| (instruction[31:26] ^ `J);
+  assign JAL_IF = ~| (instruction[31:26] ^ `JAL);
+  assign BEQ_IF = ~| (instruction[31:26] ^ `BEQ);
+  assign BNE_IF = ~| (instruction[31:26] ^ `BNE);
+  assign JR_IF = (~|(instruction[31:26] ^ 6'b0)) && (~|(instruction[5:0] ^ `JR));
+  assign LW_IF = ~| (instruction[31:26] ^ `LW);
+  assign address_IF = instruction[25:0];
 
   // Instruction/NOP mux logic
   // NOTE: This OR gate might also need BEQ_EX and BNE_EX, not sure
@@ -295,31 +317,6 @@ input clk
                     .JR_IF(JR_IF),
                     .JR_RF(JR_RF),
                     .LW_IF(LW_IF));
-
-  // // pcUnit pcmodule(.PC(PC),
-  // //                 .PC_plus_four(PC_plus_four),
-  // //                 .clk(clk),
-  // //                 .branchAddr(immediate),
-  // //                 .jumpAddr(address),
-  // //                 .regDa(da_EX),
-  // //                 .ALUzero(ALUzero),
-  // //                 .ctrlBEQ(ctrlBEQ),
-  // //                 .ctrlBNE(ctrlBNE),
-  // //                 .ctrlJ(ctrlJ),
-  // //                 .ctrlJR(ctrlJR)
-  // //                 );
-  // pc_dff #(32) pc(.trigger(clk),
-  //                 .d(PC_plus_four),
-  //                 .q(PC));
-  //
-  // // PC + 4
-  // full32BitAdder add4(.sum(PC_plus_four),
-  //                 .carryout(),
-  //                 .overflow(),
-  //                 .a(PC),
-  //                 .b(32'b100),
-  //                 .subtract(1'b0));
-
 
   // Reg file inputs
   // Aw input

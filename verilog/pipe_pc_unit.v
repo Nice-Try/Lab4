@@ -1,6 +1,6 @@
-`include "pc_dff.v"
-`include "adder.v"
-`include "mux32.v"
+// `include "pc_dff.v"
+// `include "adder.v"
+// `include "mux32.v"
 
 // PC unit
 module pipePCUnit
@@ -10,7 +10,7 @@ output [31:0] PC,                 // current output of PC
 input         clk,                // System clock
 input  [31:0] da_RF,              // Reg output a from RF phase (for JR ctrl)
 input  [25:0] address,            // Jump address from instruction
-input  [15:0] imm_EX,             // Immediate from EX phase
+input  [31:0] imm_EX,             // Immediate from EX phase
 input         stall_MUX,          // Whether the NOP mux is stalled
               ALUZero,            // Zero output of ALU (from EX phase)
               BEQ_IF,             // whether it is BEQ from the IF phase
@@ -52,13 +52,13 @@ input         stall_MUX,          // Whether the NOP mux is stalled
               .subtract(1'b0));
 
   // Branch address
-  assign branchAddr = {{14{imm_EX[15]}}, imm_EX, 2'b0};
+  assign branchAddr = imm_EX << 10;
 
   // Branch control
   and and0(BEQctrl, BEQ_EX, ALUZero);       // If BEQ and ALUZero
   not inv(nALUZero, ALUZero);
   and and1(BNEctrl, BNE_EX, nALUZero);      // Or if BNE and not ALUZero
-  or orgate(branchctrl, and0out, and1out);  // Then take branch address in mux
+  or orgate(branchctrl, BEQctrl, BNEctrl);  // Then take branch address in mux
 
   // PC + 4 + branch address
   full32BitAdder addBranch(.sum(pc_plus_four_plus_branch),
