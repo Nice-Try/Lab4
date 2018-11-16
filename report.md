@@ -5,6 +5,8 @@ Louise Nielsen and Camille Xue
 
 Our architecture closely follows the general idea of the pipeline CPUs from the class slides. Our full diagram is below.
 
+The red lines between phases represent our D flip flops that make this a pipeline CPU. For clarity, we don't show signals being propagated the entire way through - we show them going into the next D flip flop line, then refer to them (with the appropriate phase name, indicating how far they were propagated) when we use them again.
+
 ![Diagram](https://image.ibb.co/jRkQ0L/full-pipeline.png)
 
 ### Instruction fetch phase
@@ -19,7 +21,9 @@ The really interesting part of the IF phase is the PC unit. This PC unit looks a
 
 ### Register fetch phase
 
+In this phase, we decode the instruction, create a lot of control signals with a LUT, read from the register file, and determine to what address we will be writing to the register file in three phases. Muxing between the possible register addresses here would be slightly more efficient than later because we are only passing along one 5-bit address instead of three 5-bit addresses and 2 bits of control signal through the rest of the pipeline.
 
+Our LUT is a subset of our LUT last phase, except that we implemented a `nop` instruction. We used all 0s, which looks like an `opcode` and `funct` of all 0s. For a full MIPS CPU, that is the command for shift left logical. However, that instruction means to logically (fill with 0s) shift left what's in the zero register by 0 bits and write it to the zero register, none of which do anything.
 
 <img src="https://image.ibb.co/iHAfZf/RF-phase.png" width="400"/>
 
