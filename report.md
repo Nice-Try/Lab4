@@ -28,12 +28,20 @@ Our LUT is a subset of our LUT last phase, except that we implemented a `nop` in
 <img src="https://image.ibb.co/iHAfZf/RF-phase.png" width="400"/>
 
 ### Execute phase
+
+The EX phase looks a lot like part of our single cycle CPU, except with a lot of muxes. These muxes are for data forwarding, how we handled a lot of our data hazards. More information is available in the Hazard Mitigation section.
+
 <img src="https://image.ibb.co/e753n0/EX-phase.png" width="400"/>
 
 ### Memory phase
+
+In this phase, we write to and read to memory, as well as decide which of three possible inputs goes into the register file. Having the mux in this phase (instead of the next phase) is useful both for space efficiency - only one 32-bit to pass along, instead of three and a 2-bit control signal - and for hazard mitigation (we get to forward from `lw` instructions this way).
+
 <img src="https://image.ibb.co/dhH50L/MEM-phase.png" width="400"/>
 
 ### Write back phase
+In this phase, we write back to the register file. It's probably the least interesting phase because we made all the relevant decisions in earlier phases.
+
 <img src="https://image.ibb.co/ctu7Ef/WB-phase.png" width="400"/>
 
 ## Hazard Mitigation
