@@ -11,8 +11,7 @@ input         clk,                // System clock
 input  [31:0] da_RF,              // Reg output a from RF phase (for JR ctrl)
 input  [25:0] address,            // Jump address from instruction
 input  [15:0] imm_EX,             // Immediate from EX phase
-input         stall_MUX,          // Whether the NOP mux is stalled
-              ALUZero,            // Zero output of ALU (from EX phase)
+input         ALUZero,            // Zero output of ALU (from EX phase)
               BEQ_IF,             // whether it is BEQ from the IF phase
               BNE_IF,             // whether it is BNE from the IF phase
               BEQ_RF,
@@ -34,10 +33,6 @@ input         stall_MUX,          // Whether the NOP mux is stalled
               pc_plus_four_plus_branch,
               muxBranchOut;
   wire        branchctrl;
-  // wire        BEQctrl,
-  //             BNEctrl,
-  //             nALUZero,
-  //             branchctrl;
 
   // Stall PC
 
@@ -70,10 +65,6 @@ input         stall_MUX,          // Whether the NOP mux is stalled
 
   // Branch control
   assign branchctrl = (BEQ_EX & ALUZero) | (BNE_EX & ~(ALUZero));
-  // and and0(BEQctrl, BEQ_EX, ALUZero);       // If BEQ and ALUZero
-  // not inv(nALUZero, ALUZero);
-  // and and1(BNEctrl, BNE_EX, nALUZero);      // Or if BNE and not ALUZero
-  // or orgate(branchctrl, BEQctrl, BNEctrl);  // Then take branch address in mux
 
   // PC + 4 + branch address
   full32BitAdder addBranch(.sum(pc_plus_four_plus_branch),
